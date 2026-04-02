@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>登录</title>
+<style>
+body{background:#1e293b;color:#fff;font-family:Microsoft YaHei}
+.login{max-width:400px;margin:100px auto;background:#0f172a;padding:40px;border-radius:12px}
+input{width:100%;padding:14px;margin:10px 0;border:none;border-radius:8px;background:#1e293b;color:#fff;font-size:16px}
+button{width:100%;padding:14px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-size:16px;margin-top:10px}
+</style>
+
+<div class="login">
+  <h2>公司贵金属系统</h2>
+  <input id="u" placeholder="账号">
+  <input id="p" type="password" placeholder="密码">
+  <button onclick="dologin()">登录</button>
+</div>
+
+<script>
+function dologin(){
+  var user = document.getElementById("u").value;
+  var pass = document.getElementById("p").value;
+
+  if(user == "xygd" && pass == "xygd@2026"){
+    sessionStorage.login = "ok";
+    location.href = "index.html";
+  }else{
+    alert("账号或密码错误");
+  }
+}
+</script>
