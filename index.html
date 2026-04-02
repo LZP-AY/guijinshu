@@ -3,49 +3,233 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>贵金属价格监控</title>
+<title>贵金属价格智能监控</title>
 <style>
-*{box-sizing:border-box;font-family:Microsoft YaHei,sans-serif;margin:0;padding:0}
-body{background:#f7f9fc;color:#333}
-.header{background:#1d4ed8;color:#fff;padding:1rem 2rem;}
-.toolbar{display:flex;gap:10px;padding:1rem 2rem;background:#fff;flex-wrap:wrap}
-.toolbar input{padding:8px;border:1px solid #ddd;border-radius:6px}
-.toolbar button{padding:8px 14px;background:#1d4ed8;color:#fff;border:none;border-radius:6px;cursor:pointer}
-.tabbar{display:flex;background:#fff;}
-.tab{padding:1rem 1.5rem;cursor:pointer;font-weight:500}
-.tab.active{border-bottom:3px solid #1d4ed8;color:#1d4ed8}
-.page{display:none;padding:1.5rem 2rem}
-.page.active{display:block}
-.card{background:#fff;border-radius:10px;padding:1rem;margin:1rem 0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.chart-box{height:280px;width:100%}
-.table-box{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;text-align:left;border-bottom:1px solid #eee}
-th{background:#eff6ff;color:#1e40af}
-.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem}
-.kpi .item{background:#fff;padding:1rem;border-radius:10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
-.kpi .label{font-size:12px;color:#666}
-.kpi .value{font-size:16px;font-weight:bold;margin-top:4px}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
 
-/* 登录遮罩 */
-.mask{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login{background:#fff;padding:30px;border-radius:16px;width:340px}
-.login h3{margin-bottom:20px;text-align:center}
-.login input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:16px}
-.login button{width:100%;padding:12px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer}
+body {
+  background: #f5f7fa;
+  color: #222;
+  font-size: 16px;
+  line-height: 1.6;
+}
 
-.pwdModal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:999}
-.pwdBox{background:#fff;padding:24px;border-radius:12px;width:320px}
-.pwdBox input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin:12px 0}
-.pwdBox .btns{display:flex;gap:10px;justify-content:flex-end}
-.pwdBox button{padding:8px 16px;border-radius:8px;border:none;cursor:pointer}
-.pwdBox .ok{background:#1d4ed8;color:#fff}
+/* 头部适配 */
+.header {
+  background: #1d4ed8;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-size: clamp(18px, 4.5vw, 24px);
+}
+
+/* 工具栏适配 */
+.toolbar {
+  background: white;
+  padding: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #eee;
+}
+
+.toolbar input, .toolbar button {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: clamp(14px, 3.5vw, 15px);
+}
+
+.toolbar button {
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* 标签栏适配 */
+.tabbar {
+  display: flex;
+  background: white;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.tab {
+  padding: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: clamp(14px, 3.5vw, 16px);
+  color: #555;
+  border-bottom: 3px solid transparent;
+}
+
+.tab.active {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+/* 页面内容 */
+.page {
+  display: none;
+  padding: 1rem;
+}
+.page.active {
+  display: block;
+}
+
+/* 卡片 */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+}
+
+/* 图表容器 */
+.chart-box {
+  width: 100%;
+  height: clamp(240px, 50vw, 340px);
+  margin-bottom: 1rem;
+}
+
+/* 表格适配 */
+.table-box {
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(13px, 3.2vw, 14px);
+}
+th, td {
+  padding: 0.7rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+th {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* KPI 面板 */
+.kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.kpi .item {
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.kpi .label {
+  font-size: clamp(12px, 3vw, 13px);
+  color: #666;
+}
+.kpi .value {
+  font-size: clamp(16px, 4.5vw, 20px);
+  font-weight: bold;
+  color: #1d4ed8;
+  margin-top: 0.3rem;
+}
+
+/* 登录弹窗 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.login {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: min(90%, 360px);
+}
+.login h3 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: clamp(18px, 5vw, 20px);
+}
+.login input {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 1rem;
+  font-size: 16px;
+}
+.login button {
+  width: 100%;
+  padding: 0.8rem;
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.pwdModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.pwdBox {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: min(90%, 340px);
+}
+.pwdBox input {
+  width: 100%;
+  padding: 0.7rem;
+  margin: 0.8rem 0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+.btns {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.pwdBox button {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.pwdBox .ok {
+  background: #1d4ed8;
+  color: white;
+}
 </style>
 </head>
 
 <body>
 
-<!-- 整站密码 -->
+<!-- 登录弹窗 -->
 <div class="mask" id="loginMask">
   <div class="login">
     <h3>请输入访问密码</h3>
@@ -123,7 +307,7 @@ let data = myData || [];
 let show = [...data];
 
 window.onload = function(){
-  setTimeout(()=>{ render() }, 300);
+  setTimeout(render, 500);
 }
 
 function checkMain(){
@@ -132,44 +316,29 @@ function checkMain(){
     mainOk = true;
     document.getElementById("loginMask").style.display = "none";
     render();
-  } else {
-    alert("密码错误");
-  }
+  } else alert("密码错误");
 }
 
 function go(i){
   if(!mainOk) return;
-  if((i==2||i==3) && !costOk){
-    gotoPage = i;
-    document.getElementById("costModal").style.display = "flex";
-    return;
-  }
+  if((i==2||i==3)&&!costOk){ gotoPage=i; document.getElementById("costModal").style.display="flex"; return; }
   document.querySelectorAll(".page").forEach((x,j)=>x.classList.toggle("active",j==i));
   document.querySelectorAll(".tab").forEach((x,j)=>x.classList.toggle("active",j==i));
 }
 
-function closeCost(){
-  document.getElementById("costModal").style.display = "none";
-}
-
+function closeCost(){ document.getElementById("costModal").style.display="none"; }
 function checkCost(){
-  let v = document.getElementById("costPwd").value.trim();
-  if(v === COST_PWD){
-    costOk = true;
-    closeCost();
-    go(gotoPage);
-  } else {
-    alert("密码错误");
-  }
+  let v=document.getElementById("costPwd").value.trim();
+  if(v===COST_PWD){ costOk=true; closeCost(); go(gotoPage); } else alert("密码错误");
 }
 
 function render(){
   if(!mainOk) return;
   updateKPI();
-  table("tb0", ["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
-  table("tb1", ["时间","铂含税(元/克)","铑含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
-  table("tb2", ["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
-  table("tb3", ["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
+  table("tb0",["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
+  table("tb1",["时间","铂含税(元/克)","铑含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
+  table("tb2",["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
+  table("tb3",["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
   chart("c0","黄金","金99(元/克)");
   chart("c1","铂金","铂(元/克)");
   chart("c2","铑金","铑(元/克)");
@@ -181,49 +350,39 @@ function render(){
 
 function updateKPI(){
   if(!data.length) return;
-  let d = data.at(-1);
-  document.getElementById("g").innerText = d["金99(元/克)"]??"—";
-  document.getElementById("b").innerText = d["铂(元/克)"]??"—";
-  document.getElementById("l").innerText = d["铑(元/克)"]??"—";
+  let d=data.at(-1);
+  document.getElementById("g").innerText=d["金99(元/克)"]??"—";
+  document.getElementById("b").innerText=d["铂(元/克)"]??"—";
+  document.getElementById("l").innerText=d["铑(元/克)"]??"—";
 }
 
-function table(id, cols){
-  let t = document.getElementById(id);
-  let h = "<tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>";
-  show.forEach(r=>{
-    h+="<tr>";
-    cols.forEach(c=>h+=`<td>${r[c]??""}</td>`);
-    h+="</tr>";
-  });
-  t.innerHTML = h;
+function table(id,cols){
+  let t=document.getElementById(id);
+  let h="<tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>";
+  show.forEach(r=>{h+="<tr>";cols.forEach(c=>h+=`<td>${r[c]??""}</td>`);h+="</tr>";});
+  t.innerHTML=h;
 }
 
-function chart(id, label, key){
-  let ctx = document.getElementById(id).getContext("2d");
-  new Chart(ctx, {
+function chart(id,label,key){
+  let ctx=document.getElementById(id).getContext("2d");
+  new Chart(ctx,{
     type:"line",
-    data:{
-      labels: show.map(x=>x.时间),
-      datasets:[{label, data:show.map(x=>x[key]), borderColor:"#1d4ed8", tension:0.3, fill:false}]
-    },
-    options:{responsive:true, maintainAspectRatio:false}
+    data:{labels:show.map(x=>x.时间), datasets:[{label,data:show.map(x=>x[key]),borderColor:"#1d4ed8",tension:0.3,fill:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{font:{size:14}}}}
   });
 }
 
 function filter(){
-  let a = new Date(document.getElementById("t1").value);
-  let b = new Date(document.getElementById("t2").value);
-  show = data.filter(d=>{
-    let t = new Date(d.时间);
-    return (!a.getTime() || t>=a) && (!b.getTime() || t<=b);
-  });
+  let a=new Date(document.getElementById("t1").value);
+  let b=new Date(document.getElementById("t2").value);
+  show=data.filter(d=>{let t=new Date(d.时间);return (!a.getTime()||t>=a)&&(!b.getTime()||t<=b);});
   render();
 }
 
 function reset(){
   document.getElementById("t1").value="";
   document.getElementById("t2").value="";
-  show = [...data];
+  show=[...data];
   render();
 }
 </script>
