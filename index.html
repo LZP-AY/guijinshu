@@ -3,388 +3,459 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>贵金属价格智能监控</title>
+<title>贵金属价格智能监控分析系统</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script src="data.js"></script>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-}
+*{box-sizing:border-box;font-family:"Microsoft YaHei",sans-serif;margin:0;padding:0}
+body{background:#f7f9fc;color:#333}
+.header{background:#1d4ed8;color:#fff;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.header .title{font-size:1.25rem;font-weight:600}
+.toolbar{display:flex;gap:12px;padding:1rem 2rem;background:#fff;border-bottom:1px solid #e5e7eb;align-items:center;flex-wrap:wrap}
+.toolbar input{padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+.toolbar button{padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.toolbar .gray{background:#6b7280}
+.toolbar .green{background:#059669}
+.toolbar .blue{background:#0ea5e9}
+.tabbar{display:flex;background:#fff;border-bottom:1px solid #e5e7eb}
+.tab{padding:1rem 1.5rem;cursor:pointer;border-bottom:3px solid transparent;font-weight:500}
+.tab.active{border-color:#1d4ed8;color:#1d4ed8}
+.page{display:none;padding:1.5rem 2rem}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+.card h3{font-size:1rem;margin-bottom:0.75rem;color:#1f2937}
+.table-box{overflow-x:auto;border-radius:8px}
+table{width:100%;border-collapse:collapse}
+th{background:#eff6ff;color:#1e40af;padding:12px;text-align:left;cursor:pointer;user-select:none}
+th:hover{background:#dbeafe}
+td{padding:12px;border-bottom:1px solid #e5e7eb}
+tbody tr:nth-child(even){background:#f9fafb}
+tbody tr:hover{background:#eff6ff}
+.up{color:#dc2626;font-weight:500}
+.down{color:#16a34a;font-weight:500}
+.neutral{color:#333}
+.chart-box{height:280px;margin-bottom:1rem}
+.dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;padding:1.25rem;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);text-align:center}
+.kpi .label{font-size:12px;color:#6b7280}
+.kpi .value{font-size:18px;font-weight:700;margin-top:6px}
+.badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:12px;margin-top:4px}
+.badge.up{background:#fef2f2;color:#dc2626}
+.badge.down{background:#f0fdf4;color:#16a34a}
 
-body {
-  background: #f5f7fa;
-  color: #222;
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-/* 头部适配 */
-.header {
-  background: #1d4ed8;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-  font-size: clamp(18px, 4.5vw, 24px);
-}
-
-/* 工具栏适配 */
-.toolbar {
-  background: white;
-  padding: 0.8rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid #eee;
-}
-
-.toolbar input, .toolbar button {
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: clamp(14px, 3.5vw, 15px);
-}
-
-.toolbar button {
-  background: #1d4ed8;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-/* 标签栏适配 */
-.tabbar {
-  display: flex;
-  background: white;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-.tab {
-  padding: 1rem;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: clamp(14px, 3.5vw, 16px);
-  color: #555;
-  border-bottom: 3px solid transparent;
-}
-
-.tab.active {
-  border-color: #1d4ed8;
-  color: #1d4ed8;
-  background: #eff6ff;
-}
-
-/* 页面内容 */
-.page {
+/* 密码弹窗样式 */
+.modal-overlay {
   display: none;
-  padding: 1rem;
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.5); z-index:9999;
+  justify-content: center; align-items: center;
 }
-.page.active {
-  display: block;
+.modal-box {
+  background:#fff; padding:24px; border-radius:12px; width:360px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
-
-/* 卡片 */
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+.modal-box h4 {
+  margin-bottom:16px; font-size:16px; color:#111;
 }
-
-/* 图表容器 */
-.chart-box {
-  width: 100%;
-  height: clamp(240px, 50vw, 340px);
-  margin-bottom: 1rem;
+.modal-box input {
+  width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px;
+  font-size:15px; margin-bottom:16px;
 }
-
-/* 表格适配 */
-.table-box {
-  width: 100%;
-  overflow-x: auto;
+.modal-btns {
+  display: flex; gap:10px; justify-content: flex-end;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: clamp(13px, 3.2vw, 14px);
+.modal-btns button {
+  padding:8px 16px; border:none; border-radius:8px; cursor:pointer;
 }
-th, td {
-  padding: 0.7rem;
-  border-bottom: 1px solid #eee;
-  text-align: left;
+.btn-confirm {
+  background:#1d4ed8; color:#fff;
 }
-th {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-/* KPI 面板 */
-.kpi {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.8rem;
-  margin-bottom: 1rem;
-}
-.kpi .item {
-  background: white;
-  padding: 1rem;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-.kpi .label {
-  font-size: clamp(12px, 3vw, 13px);
-  color: #666;
-}
-.kpi .value {
-  font-size: clamp(16px, 4.5vw, 20px);
-  font-weight: bold;
-  color: #1d4ed8;
-  margin-top: 0.3rem;
-}
-
-/* 登录弹窗 */
-.mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.login {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  width: min(90%, 360px);
-}
-.login h3 {
-  text-align: center;
-  margin-bottom: 1rem;
-  font-size: clamp(18px, 5vw, 20px);
-}
-.login input {
-  width: 100%;
-  padding: 0.8rem;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  margin-bottom: 1rem;
-  font-size: 16px;
-}
-.login button {
-  width: 100%;
-  padding: 0.8rem;
-  background: #1d4ed8;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.pwdModal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-.pwdBox {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  width: min(90%, 340px);
-}
-.pwdBox input {
-  width: 100%;
-  padding: 0.7rem;
-  margin: 0.8rem 0;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-}
-.btns {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-.pwdBox button {
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-.pwdBox .ok {
-  background: #1d4ed8;
-  color: white;
+.btn-cancel {
+  background:#e5e7eb; color:#333;
 }
 </style>
 </head>
 
 <body>
+<script>
+// 登录校验
+if (!sessionStorage.login) location.href = "login.html";
 
-<!-- 登录弹窗 -->
-<div class="mask" id="loginMask">
-  <div class="login">
-    <h3>请输入访问密码</h3>
-    <input type="password" id="mainPwd" placeholder="输入密码">
-    <button onclick="checkMain()">登录</button>
-  </div>
-</div>
+// 数据初始化
+let myDataAll = Array.isArray(myData) ? [...myData] : [];
+let filterData = [...myDataAll];
+let latest = myDataAll.at(-1) || {};
+let prev = myDataAll.at(-2) || latest;
+let sortState = { col: null, asc: true };
+let charts = {};
 
-<!-- 成本密码 -->
-<div class="pwdModal" id="costModal">
-  <div class="pwdBox">
-    <h4>请输入成本密码</h4>
-    <input type="password" id="costPwd">
-    <div class="btns">
-      <button onclick="closeCost()">取消</button>
-      <button class="ok" onclick="checkCost()">确认</button>
+// 成本页密码
+const COST_PASSWORD = "xygdnbnbnb";
+let hasCostAuth = false;
+
+// 导出数据密码
+const EXPORT_PASSWORD = "xygd@scb";
+
+// 自动刷新 (5分钟)
+setInterval(() => { location.reload(); }, 300000);
+
+// 退出登录
+function logout() {
+  sessionStorage.clear();
+  location.href = "login.html";
+}
+
+// 重置筛选
+function resetFilter() {
+  document.getElementById('startTime').value = '';
+  document.getElementById('endTime').value = '';
+  filterData = [...myDataAll];
+  renderAll();
+}
+
+// 计算涨跌
+function calcChange(curr, prev) {
+  if (!curr || !prev || curr == prev) return { text: "—", cls: "neutral" };
+  const numCurr = Number(curr) || 0;
+  const numPrev = Number(prev) || 0;
+  const diff = (numCurr - numPrev).toFixed(2);
+  if (diff > 0) return { text: `+${diff}`, cls: "up" };
+  if (diff < 0) return { text: diff, cls: "down" };
+  return { text: "—", cls: "neutral" };
+}
+
+// 时间筛选
+function filterTable() {
+  const start = new Date(document.getElementById('startTime').value);
+  const end = new Date(document.getElementById('endTime').value);
+  filterData = myDataAll.filter(row => {
+    const d = new Date(row.时间);
+    return (!start.getTime() || d >= start) && (!end.getTime() || d <= end);
+  });
+  renderAll();
+}
+
+// —————————————————————————————
+// 通用导出密码弹窗
+// —————————————————————————————
+function openExportPasswordModal(callback) {
+  const overlay = document.getElementById('costModalOverlay');
+  const input = document.getElementById('costPasswordInput');
+  const title = document.querySelector('#costModalOverlay h4');
+  title.textContent = '请输入导出数据密码';
+  overlay.style.display = 'flex';
+  input.value = '';
+  input.focus();
+
+  input.onkeydown = null;
+
+  window.confirmCostPwd = function() {
+    const val = input.value.trim();
+    if (val === EXPORT_PASSWORD) {
+      overlay.style.display = 'none';
+      callback(true);
+    } else {
+      alert('密码错误，请重试');
+      input.focus();
+    }
+  };
+
+  window.cancelCostPwd = function() {
+    overlay.style.display = 'none';
+    callback(false);
+  };
+
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmCostPwd();
+    }
+  };
+}
+
+// 导出当前筛选数据（密码验证）
+function exportExcel() {
+  openExportPasswordModal((ok) => {
+    if (!ok) return;
+    if (filterData.length === 0) { alert("无数据可导出"); return; }
+    const headers = Object.keys(filterData[0] || {});
+    const csv = [headers.join(",")].concat(filterData.map(r => headers.map(h => r[h] ?? "").join(","))).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `贵金属价格数据_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+}
+
+// 导出全量历史数据（密码验证）
+function exportAllData() {
+  openExportPasswordModal((ok) => {
+    if (!ok) return;
+    if (myDataAll.length === 0) { alert("无数据可导出"); return; }
+    const headers = Object.keys(myDataAll[0] || {});
+    const csv = [headers.join(",")].concat(myDataAll.map(r => headers.map(h => r[h] ?? "").join(","))).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `贵金属历史全量数据_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+}
+
+// 绘制图表
+function drawChart(el, label, key, color) {
+  const ctx = document.getElementById(el)?.getContext("2d");
+  if (!ctx) return;
+  if (charts[el]) charts[el].destroy();
+  const validData = filterData.filter(d => d[key] != null && d[key] !== "");
+  charts[el] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: validData.map(x => x.时间),
+      datasets: [{
+        label, data: validData.map(x => x[key]),
+        borderColor: color, backgroundColor: color+"33",
+        tension: 0.3, fill: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { tooltip: { mode: "index", intersect: false } }
+    }
+  });
+}
+
+// 成本密码弹窗
+function openCostPasswordModal(callback) {
+  const overlay = document.getElementById('costModalOverlay');
+  const input = document.getElementById('costPasswordInput');
+  const title = document.querySelector('#costModalOverlay h4');
+  title.textContent = '请输入成本查看密码';
+  overlay.style.display = 'flex';
+  input.value = '';
+  input.focus();
+
+  input.onkeydown = null;
+
+  window.confirmCostPwd = function() {
+    const val = input.value.trim();
+    if (val === COST_PASSWORD) {
+      hasCostAuth = true;
+      overlay.style.display = 'none';
+      callback(true);
+    } else {
+      alert('密码错误，请重试');
+      input.focus();
+    }
+  };
+
+  window.cancelCostPwd = function() {
+    overlay.style.display = 'none';
+    callback(false);
+  };
+
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      confirmCostPwd();
+    }
+  };
+}
+
+// 标签切换（带权限）
+function gotoTab(i) {
+  if ((i === 2 || i === 3) && !hasCostAuth) {
+    openCostPasswordModal((ok) => {
+      if (ok) doSwitchTab(i);
+    });
+    return;
+  }
+  doSwitchTab(i);
+}
+
+function doSwitchTab(i) {
+  document.querySelectorAll('.page').forEach((x,j)=>x.classList.toggle('active',j==i));
+  document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('active',j==i));
+}
+
+// 表格排序
+function sortTable(col, tableId, cols) {
+  sortState.col === col ? (sortState.asc = !sortState.asc) : (sortState = { col: col, asc: true });
+  filterData.sort((a,b)=>{
+    const va = a[col], vb = b[col];
+    if(!isNaN(va) && !isNaN(vb)) return sortState.asc ? va - vb : vb - va;
+    return sortState.asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  renderTable(tableId, cols);
+}
+
+// 渲染表格
+function renderTable(tableId, cols) {
+  const t=document.getElementById(tableId);
+  if(!t || filterData.length === 0) {
+    if(t) t.innerHTML = "<tr><td colspan='"+cols.length+"' style='text-align:center;padding:20px'>暂无数据</td></tr>";
+    return;
+  }
+
+  let h = "<tr>";
+  cols.forEach(c => {
+    const arrow = sortState.col === c ? (sortState.asc ? " ↑" : " ↓") : "";
+    h += `<th onclick="sortTable('${c}','${tableId}',${JSON.stringify(cols)})">${c}${arrow}</th>`;
+  });
+  h += "</tr>";
+
+  filterData.forEach((r,i)=>{
+    h += "<tr>";
+    cols.forEach(c=>{
+      const val = r[c] ?? "—";
+      let cls = "neutral";
+      if(i > 0 && !isNaN(val) && !isNaN(filterData[i-1][c])) {
+        cls = val > filterData[i-1][c] ? "up" : val < filterData[i-1][c] ? "down" : "neutral";
+      }
+      h += `<td class="${cls}">${val}</td>`;
+    });
+    h += "</tr>";
+  });
+  t.innerHTML = h;
+}
+
+// 全局渲染
+function renderAll() {
+  // 表格
+  renderTable("t1", ["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
+  renderTable("t2", ["时间","铂含税(元/克)","铑含税(元/克)","铂不含税(元/克)","铑不含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
+  renderTable("t3", ["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
+  renderTable("t4", ["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
+
+  // 图表
+  drawChart("c1","黄金价格","金99(元/克)","#dc2626");
+  drawChart("c2","铂金价格","铂(元/克)","#16a34a");
+  drawChart("c3","铑金价格","铑(元/克)","#7c3aed");
+  drawChart("c4","铂含税","铂含税(元/克)","#2563eb");
+  drawChart("c5","铑含税","铑含税(元/克)","#db2777");
+  drawChart("c6","单线总计","单线总计(万元)","#f59e0b");
+  drawChart("c7","四线总计","四线总计(万元)","#4f46e5");
+
+  // KPI
+  const g = calcChange(latest["金99(元/克)"], prev["金99(元/克)"]);
+  const b = calcChange(latest["铂(元/克)"], prev["铂(元/克)"]);
+  const l = calcChange(latest["铑(元/克)"], prev["铑(元/克)"]);
+  const busd = calcChange(latest["铂美元/盎司"], prev["铂美元/盎司"]);
+  const lusd = calcChange(latest["铑美元/盎司"], prev["铑美元/盎司"]);
+  const rate = calcChange(latest["汇率"], prev["汇率"]);
+
+  document.querySelector(".kpi-g .value").textContent = latest["金99(元/克)"] ?? "—";
+  document.querySelector(".kpi-b .value").textContent = latest["铂(元/克)"] ?? "—";
+  document.querySelector(".kpi-l .value").textContent = latest["铑(元/克)"] ?? "—";
+  document.querySelector(".kpi-busd .value").textContent = latest["铂美元/盎司"] ?? "—";
+  document.querySelector(".kpi-lusd .value").textContent = latest["铑美元/盎司"] ?? "—";
+  document.querySelector(".kpi-rate .value").textContent = latest["汇率"] ?? "—";
+
+  document.querySelector(".kpi-g .badge").className = "badge " + g.cls;
+  document.querySelector(".kpi-b .badge").className = "badge " + b.cls;
+  document.querySelector(".kpi-l .badge").className = "badge " + l.cls;
+  document.querySelector(".kpi-busd .badge").className = "badge " + busd.cls;
+  document.querySelector(".kpi-lusd .badge").className = "badge " + lusd.cls;
+  document.querySelector(".kpi-rate .badge").className = "badge " + rate.cls;
+
+  document.querySelector(".kpi-g .badge").textContent = g.text;
+  document.querySelector(".kpi-b .badge").textContent = b.text;
+  document.querySelector(".kpi-l .badge").textContent = l.text;
+  document.querySelector(".kpi-busd .badge").textContent = busd.text;
+  document.querySelector(".kpi-lusd .badge").textContent = lusd.text;
+  document.querySelector(".kpi-rate .badge").textContent = rate.text;
+}
+
+window.addEventListener('load', renderAll);
+</script>
+
+<!-- 密码弹窗 -->
+<div class="modal-overlay" id="costModalOverlay">
+  <div class="modal-box">
+    <h4>请输入密码</h4>
+    <input type="password" id="costPasswordInput" placeholder="输入密码">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cancelCostPwd()">取消</button>
+      <button class="btn-confirm" onclick="confirmCostPwd()">确认</button>
     </div>
   </div>
 </div>
 
-<div class="header">📈 贵金属价格智能监控</div>
+<div class="header">
+  <div class="title">📈 贵金属价格智能监控分析系统</div>
+  <button onclick="logout()" style="background:#ef4444;border:none;color:#fff;padding:9px 14px;border-radius:8px;cursor:pointer">退出登录</button>
+</div>
 
 <div class="toolbar">
-  <input type="datetime-local" id="t1">
-  <input type="datetime-local" id="t2">
-  <button onclick="filter()">筛选</button>
-  <button onclick="reset()">重置</button>
+  <input id="startTime" type="datetime-local" placeholder="开始时间">
+  <input id="endTime" type="datetime-local" placeholder="结束时间">
+  <button onclick="filterTable()">筛选</button>
+  <button class="gray" onclick="resetFilter()">重置</button>
+  <button class="green" onclick="exportExcel()">导出当前数据</button>
+  <button class="blue" onclick="exportAllData()">导出全量历史</button>
 </div>
 
 <div class="tabbar">
-  <div class="tab active" onclick="go(0)">上海有色网</div>
-  <div class="tab" onclick="go(1)">庄信万丰</div>
-  <div class="tab" onclick="go(2)">单线成本</div>
-  <div class="tab" onclick="go(3)">四线成本</div>
+  <div class="tab active" onclick="gotoTab(0)">上海有色网</div>
+  <div class="tab" onclick="gotoTab(1)">庄信万丰</div>
+  <div class="tab" onclick="gotoTab(2)">单线成本</div>
+  <div class="tab" onclick="gotoTab(3)">四线成本</div>
 </div>
 
-<div class="page active" id="p0">
-  <div class="kpi">
-    <div class="item"><div class="label">黄金</div><div id="g">—</div></div>
-    <div class="item"><div class="label">铂金</div><div id="b">—</div></div>
-    <div class="item"><div class="label">铑金</div><div id="l">—</div></div>
+<div class="page active">
+  <div class="dashboard">
+    <div class="kpi kpi-g">
+      <div class="label">黄金</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
+    <div class="kpi kpi-b">
+      <div class="label">铂金</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
+    <div class="kpi kpi-l">
+      <div class="label">铑金</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
+    <div class="kpi kpi-busd">
+      <div class="label">铂(美元/盎司)</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
+    <div class="kpi kpi-lusd">
+      <div class="label">铑(美元/盎司)</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
+    <div class="kpi kpi-rate">
+      <div class="label">汇率</div>
+      <div class="value">—</div>
+      <div class="badge">—</div>
+    </div>
   </div>
-  <div class="card"><div class="chart-box"><canvas id="c0"></canvas></div></div>
-  <div class="card"><div class="chart-box"><canvas id="c1"></canvas></div></div>
-  <div class="card"><div class="chart-box"><canvas id="c2"></canvas></div></div>
-  <div class="card"><div class="table-box"><table id="tb0"></table></div></div>
+
+  <div class="card"><h3>黄金价格走势</h3><div class="chart-box"><canvas id="c1"></canvas></div></div>
+  <div class="card"><h3>铂金价格走势</h3><div class="chart-box"><canvas id="c2"></canvas></div></div>
+  <div class="card"><h3>铑金价格走势</h3><div class="chart-box"><canvas id="c3"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="t1"></table></div></div>
 </div>
 
-<div class="page" id="p1">
-  <div class="card"><div class="chart-box"><canvas id="c3"></canvas></div></div>
-  <div class="card"><div class="chart-box"><canvas id="c4"></canvas></div></div>
-  <div class="card"><div class="table-box"><table id="tb1"></table></div></div>
+<div class="page">
+  <div class="card"><h3>铂含税价格走势</h3><div class="chart-box"><canvas id="c4"></canvas></div></div>
+  <div class="card"><h3>铑含税价格走势</h3><div class="chart-box"><canvas id="c5"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="t2"></table></div></div>
 </div>
 
-<div class="page" id="p2">
-  <div class="card"><div class="chart-box"><canvas id="c5"></canvas></div></div>
-  <div class="card"><div class="table-box"><table id="tb2"></table></div></div>
+<div class="page">
+  <div class="card"><h3>单线总成本走势</h3><div class="chart-box"><canvas id="c6"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="t3"></table></div></div>
 </div>
 
-<div class="page" id="p3">
-  <div class="card"><div class="chart-box"><canvas id="c6"></canvas></div></div>
-  <div class="card"><div class="table-box"><table id="tb3"></table></div></div>
+<div class="page">
+  <div class="card"><h3>四线总成本走势</h3><div class="chart-box"><canvas id="c7"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="t4"></table></div></div>
 </div>
 
-<script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.8/chart.umd.min.js"></script>
-<script src="data.js"></script>
-<script>
-const MAIN_PWD = "jinshu2026";
-const COST_PWD = "xygdnbnbnb";
-let mainOk = false;
-let costOk = false;
-let gotoPage = 0;
-
-let data = myData || [];
-let show = [...data];
-
-window.onload = function(){
-  setTimeout(render, 500);
-}
-
-function checkMain(){
-  let v = document.getElementById("mainPwd").value.trim();
-  if(v === MAIN_PWD){
-    mainOk = true;
-    document.getElementById("loginMask").style.display = "none";
-    render();
-  } else alert("密码错误");
-}
-
-function go(i){
-  if(!mainOk) return;
-  if((i==2||i==3)&&!costOk){ gotoPage=i; document.getElementById("costModal").style.display="flex"; return; }
-  document.querySelectorAll(".page").forEach((x,j)=>x.classList.toggle("active",j==i));
-  document.querySelectorAll(".tab").forEach((x,j)=>x.classList.toggle("active",j==i));
-}
-
-function closeCost(){ document.getElementById("costModal").style.display="none"; }
-function checkCost(){
-  let v=document.getElementById("costPwd").value.trim();
-  if(v===COST_PWD){ costOk=true; closeCost(); go(gotoPage); } else alert("密码错误");
-}
-
-function render(){
-  if(!mainOk) return;
-  updateKPI();
-  table("tb0",["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
-  table("tb1",["时间","铂含税(元/克)","铑含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
-  table("tb2",["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
-  table("tb3",["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
-  chart("c0","黄金","金99(元/克)");
-  chart("c1","铂金","铂(元/克)");
-  chart("c2","铑金","铑(元/克)");
-  chart("c3","铂含税","铂含税(元/克)");
-  chart("c4","铑含税","铑含税(元/克)");
-  chart("c5","单线总计","单线总计(万元)");
-  chart("c6","四线总计","四线总计(万元)");
-}
-
-function updateKPI(){
-  if(!data.length) return;
-  let d=data.at(-1);
-  document.getElementById("g").innerText=d["金99(元/克)"]??"—";
-  document.getElementById("b").innerText=d["铂(元/克)"]??"—";
-  document.getElementById("l").innerText=d["铑(元/克)"]??"—";
-}
-
-function table(id,cols){
-  let t=document.getElementById(id);
-  let h="<tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>";
-  show.forEach(r=>{h+="<tr>";cols.forEach(c=>h+=`<td>${r[c]??""}</td>`);h+="</tr>";});
-  t.innerHTML=h;
-}
-
-function chart(id,label,key){
-  let ctx=document.getElementById(id).getContext("2d");
-  new Chart(ctx,{
-    type:"line",
-    data:{labels:show.map(x=>x.时间), datasets:[{label,data:show.map(x=>x[key]),borderColor:"#1d4ed8",tension:0.3,fill:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{font:{size:14}}}}
-  });
-}
-
-function filter(){
-  let a=new Date(document.getElementById("t1").value);
-  let b=new Date(document.getElementById("t2").value);
-  show=data.filter(d=>{let t=new Date(d.时间);return (!a.getTime()||t>=a)&&(!b.getTime()||t<=b);});
-  render();
-}
-
-function reset(){
-  document.getElementById("t1").value="";
-  document.getElementById("t2").value="";
-  show=[...data];
-  render();
-}
-</script>
 </body>
 </html>
