@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>贵金属价格监控</title>
+<script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.8/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;font-family:Microsoft YaHei,sans-serif;margin:0;padding:0}
+body{background:#f7f9fc;color:#222}
+.header{background:#1d4ed8;color:#fff;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+.toolbar{display:flex;gap:12px;padding:1rem 2rem;background:#fff;border-bottom:1px solid #e5e7eb;flex-wrap:wrap}
+.toolbar input{padding:9px 12px;border:1px solid #d1d5db;border-radius:8px}
+.toolbar button{padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer}
+.tabbar{display:flex;background:#fff;border-bottom:1px solid #e5e7eb}
+.tab{padding:1rem 1.5rem;cursor:pointer;border-bottom:3px solid transparent;font-weight:500}
+.tab.active{border-color:#1d4ed8;color:#1d4ed8}
+.page{display:none;padding:1.5rem 2rem}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.table-box{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #e5e7eb}
+th{background:#eff6ff;color:#1e40ab}
+.chart-box{height:280px}
+.kpi-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;padding:1rem;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.05);text-align:center}
+.kpi .label{font-size:12px;color:#666}
+.kpi .value{font-size:18px;font-weight:700;margin:6px 0}
+
+/* 遮罩层 */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#fff;padding:30px;border-radius:16px;width:360px}
+.login-box h3{margin-bottom:20px;text-align:center}
+.login-box input{width:100%;padding:12px;border-radius:8px;border:1px solid #ddd;margin-bottom:16px}
+.login-box button{width:100%;padding:12px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:16px}
+
+.pwd-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:999}
+.pwd-box{background:#fff;padding:24px;border-radius:12px;width:340px}
+.pwd-box input{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin:12px 0}
+.pwd-box .btns{display:flex;gap:10px;justify-content:flex-end}
+.pwd-box button{padding:8px 16px;border-radius:8px;border:none}
+.pwd-box .ok{background:#1d4ed8;color:#fff}
+</style>
+</head>
+
+<body>
+<!-- 整站登录层 -->
+<div class="mask" id="loginMask">
+  <div class="login-box">
+    <h3>请输入访问密码</h3>
+    <input type="password" id="mainPwd" placeholder="全站访问密码">
+    <button onclick="checkMainPwd()">登录</button>
+  </div>
+</div>
+
+<!-- 成本页二次密码 -->
+<div class="pwd-modal" id="costModal">
+  <div class="pwd-box">
+    <h4>请输入成本查看密码</h4>
+    <input type="password" id="costPwd" placeholder="成本密码">
+    <div class="btns">
+      <button onclick="closeCostModal()">取消</button>
+      <button class="ok" onclick="checkCostPwd()">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="header">
+  <div>📈 贵金属价格智能监控</div>
+</div>
+
+<div class="toolbar">
+  <input type="datetime-local" id="start">
+  <input type="datetime-local" id="end">
+  <button onclick="doFilter()">筛选</button>
+  <button onclick="doReset()">重置</button>
+</div>
+
+<div class="tabbar">
+  <div class="tab active" onclick="goTab(0)">上海有色网</div>
+  <div class="tab" onclick="goTab(1)">庄信万丰</div>
+  <div class="tab" onclick="goTab(2)">单线成本</div>
+  <div class="tab" onclick="goTab(3)">四线成本</div>
+</div>
+
+<div class="page active" id="page0">
+  <div class="kpi-panel">
+    <div class="kpi"><div class="label">黄金</div><div id="k1">—</div></div>
+    <div class="kpi"><div class="label">铂金</div><div id="k2">—</div></div>
+    <div class="kpi"><div class="label">铑金</div><div id="k3">—</div></div>
+    <div class="kpi"><div class="label">铂美元/盎司</div><div id="k4">—</div></div>
+    <div class="kpi"><div class="label">铑美元/盎司</div><div id="k5">—</div></div>
+    <div class="kpi"><div class="label">汇率</div><div id="k6">—</div></div>
+  </div>
+  <div class="card"><div class="chart-box"><canvas id="c0"></canvas></div></div>
+  <div class="card"><div class="chart-box"><canvas id="c1"></canvas></div></div>
+  <div class="card"><div class="chart-box"><canvas id="c2"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="tb0"></table></div></div>
+</div>
+
+<div class="page" id="page1">
+  <div class="card"><div class="chart-box"><canvas id="c3"></canvas></div></div>
+  <div class="card"><div class="chart-box"><canvas id="c4"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="tb1"></table></div></div>
+</div>
+
+<div class="page" id="page2">
+  <div class="card"><div class="chart-box"><canvas id="c5"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="tb2"></table></div></div>
+</div>
+
+<div class="page" id="page3">
+  <div class="card"><div class="chart-box"><canvas id="c6"></canvas></div></div>
+  <div class="card"><div class="table-box"><table id="tb3"></table></div></div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ==================== 密码配置 ====================
+const MAIN_PASSWORD   = "jinshu2026";    // 整站访问密码
+const COST_PASSWORD   = "xygdnbnbnb";   // 成本页二次密码
+// ==================================================
+
+let mainAuth = false;
+let costAuth = false;
+let gotoAfterPwd = 0;
+
+let source = myData || [];
+let showData = [...source];
+
+// 整站密码校验
+function checkMainPwd(){
+  const v = document.getElementById("mainPwd").value.trim();
+  if(v === MAIN_PASSWORD){
+    mainAuth = true;
+    document.getElementById("loginMask").style.display = "none";
+    renderAll();
+  }else{
+    alert("密码错误");
+  }
+}
+
+// 成本页密码
+function goTab(i){
+  if(!mainAuth) return;
+  if((i===2||i===3) && !costAuth){
+    gotoAfterPwd = i;
+    document.getElementById("costModal").style.display = "flex";
+    return;
+  }
+  switchTo(i);
+}
+function closeCostModal(){
+  document.getElementById("costModal").style.display = "none";
+}
+function checkCostPwd(){
+  const v = document.getElementById("costPwd").value.trim();
+  if(v === COST_PASSWORD){
+    costAuth = true;
+    closeCostModal();
+    switchTo(gotoAfterPwd);
+  }else{
+    alert("成本密码错误");
+  }
+}
+function switchTo(i){
+  document.querySelectorAll('.page').forEach((e,j)=>e.classList.toggle('active',j==i));
+  document.querySelectorAll('.tab').forEach((e,j)=>e.classList.toggle('active',j==i));
+}
+
+// 渲染
+function setKPI(){
+  if(!source.length) return;
+  const d = source.at(-1);
+  document.getElementById('k1').textContent = d["金99(元/克)"]??'—';
+  document.getElementById('k2').textContent = d["铂(元/克)"]??'—';
+  document.getElementById('k3').textContent = d["铑(元/克)"]??'—';
+  document.getElementById('k4').textContent = d["铂美元/盎司"]??'—';
+  document.getElementById('k5').textContent = d["铑美元/盎司"]??'—';
+  document.getElementById('k6').textContent = d["汇率"]??'—';
+}
+
+function drawTable(id, cols){
+  const t = document.getElementById(id);
+  let html = '<tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+  showData.forEach(r=>{
+    html+='<tr>';
+    cols.forEach(c=>{html+=`<td>${r[c]??'—'}</td>`});
+    html+='</tr>';
+  });
+  t.innerHTML = html;
+}
+
+function drawChart(id, label, key){
+  const ctx = document.getElementById(id).getContext('2d');
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels: showData.map(x=>x.时间),
+      datasets:[{label, data:showData.map(x=>x[key]), borderColor:'#1d4ed8', tension:.3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false}
+  });
+}
+
+function renderAll(){
+  drawTable('tb0',["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
+  drawTable('tb1',["时间","铂含税(元/克)","铑含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
+  drawTable('tb2',["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
+  drawTable('tb3',["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
+  drawChart('c0','黄金','金99(元/克)');
+  drawChart('c1','铂金','铂(元/克)');
+  drawChart('c2','铑金','铑(元/克)');
+  drawChart('c3','铂含税','铂含税(元/克)');
+  drawChart('c4','铑含税','铑含税(元/克)');
+  drawChart('c5','单线总计','单线总计(万元)');
+  drawChart('c6','四线总计','四线总计(万元)');
+  setKPI();
+}
+
+function doFilter(){
+  const s = new Date(document.getElementById('start').value);
+  const e = new Date(document.getElementById('end').value);
+  showData = source.filter(item=>{
+    const t = new Date(item.时间);
+    return (!s.getTime() || t>=s) && (!e.getTime() || t<=e);
+  });
+  renderAll();
+}
+function doReset(){
+  document.getElementById('start').value='';
+  document.getElementById('end').value='';
+  showData = [...source];
+  renderAll();
+}
+</script>
+</body>
+</html>
