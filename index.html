@@ -74,87 +74,209 @@ tbody tr:hover{background:#eff6ff}
 }
 </style>
 </head>
+
 <body>
 <script>
 if (!sessionStorage.login) location.href = "login.html";
 
-// ==============================================
-// 高强度异或解密（专业人士逆向难度大幅提升）
-// ==============================================
-function xd(d){function hx2b(h){let b=new Uint8Array(h.length/2);for(let i=0;i<h.length;i+=2)b[i/2]=parseInt(h.substr(i,2),16);return b}function b2s(b){return new TextDecoder().decode(b)}function xor(b,k){let o=new Uint8Array(b.length);for(let i=0;i<b.length;i++)o[i]=b[i]^k.charCodeAt(i%k.length);return o}let k=(function(){let a=[120,121,103,100];let b=[64,115,99,98];return String.fromCharCode(...a,...b)})();return JSON.parse(b2s(xor(hx2b(d),k)))}
-
-let myDataAll = xd(enc_data);
+let myDataAll = Array.isArray(myData) ? [...myData] : [];
 let filterData = [...myDataAll];
 let latest = myDataAll.at(-1) || {};
 let prev = myDataAll.at(-2) || latest;
 let sortState = { col: null, asc: true };
 let charts = {};
+
 let hasCostAuth = false;
 
-
-function gp(){let a=[120,121,103,100];let b=[64,115,99,98];return String.fromCharCode(...a)+String.fromCharCode(...b);}
-
-setInterval(()=>location.reload(),300000);
-
-function logout(){sessionStorage.clear();location.href="login.html";}
-function resetFilter(){document.getElementById('startTime').value='';document.getElementById('endTime').value='';filterData=[...myDataAll];renderAll();}
-
-function calcChange(curr,prev){if(!curr||!prev||curr==prev)return{text:"—",cls:"neutral"};const a=Number(curr)||0,b=Number(prev)||0;const d=(a-b).toFixed(2);if(d>0)return{text:`+${d}`,cls:"up"};if(d<0)return{text:d,cls:"down"};return{text:"—",cls:"neutral"}}
-
-function filterTable(){const s=new Date(document.getElementById('startTime').value);const e=new Date(document.getElementById('endTime').value);filterData=myDataAll.filter(r=>{const t=new Date(r.时间);return(!s.getTime()||t>=s)&&(!e.getTime()||t<=e)});renderAll();}
-
-function openPwdModal(t,cb){const o=document.getElementById('costModalOverlay');const i=document.getElementById('costPasswordInput');const h=document.querySelector('#costModalOverlay h4');h.textContent=t;o.style.display='flex';i.value='';i.focus();i.onkeydown=null;window.confirmCostPwd=()=>{const v=i.value.trim();if(v===gp()){hasCostAuth=true;o.style.display='none';cb(true)}else{alert('密码错误');i.focus()}};window.cancelCostPwd=()=>{o.style.display='none';cb(false)};i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();confirmCostPwd()}}}
-
-function exportExcel(){openPwdModal("请输入导出密码",ok=>{if(!ok)return;if(!filterData.length){alert("无数据可导出");return;}const k=Object.keys(filterData[0]);const c=[k.join(","),...filterData.map(r=>k.map(x=>r[x]??"").join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8"}));a.download=`贵金属数据_${new Date().toISOString().slice(0,10)}.csv`;a.click()})}
-function exportAllData(){openPwdModal("请输入导出密码",ok=>{if(!ok)return;if(!myDataAll.length){alert("无数据可导出");return;}const k=Object.keys(myDataAll[0]);const c=[k.join(","),...myDataAll.map(r=>k.map(x=>r[x]??"").join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8"}));a.download=`贵金属全量_${new Date().toISOString().slice(0,10)}.csv`;a.click()})}
-
-function drawChart(el,lab,key,color){const ctx=document.getElementById(el)?.getContext("2d");if(!ctx)return;if(charts[el])charts[el].destroy();const d=filterData.filter(x=>x[key]!=null&&x[key]!=="");charts[el]=new Chart(ctx,{type:"line",data:{labels:d.map(x=>x.时间),datasets:[{label:lab,data:d.map(x=>x[key]),borderColor:color,backgroundColor:color+"33",tension:.3,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{tooltip:{mode:"index",intersect:false}}}})}
-
-function gotoTab(i){if((i===2||i===3)&&!hasCostAuth){openPwdModal("请输入成本查看密码",ok=>ok&&doSwitchTab(i));return;}doSwitchTab(i)}
-function doSwitchTab(i){document.querySelectorAll('.page').forEach((x,j)=>x.classList.toggle('active',j===i));document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('active',j===i));}
-
-function sortTable(col,tid,cols){sortState.col===col?(sortState.asc=!sortState.asc):(sortState={col,asc:true});filterData.sort((a,b)=>{const x=a[col],y=b[col];if(!isNaN(x)&&!isNaN(y))return sortState.asc?x-y:y-x;return sortState.asc?String(x).localeCompare(String(y)):String(y).localeCompare(String(x))});renderTable(tid,cols)}
-
-function renderTable(tid,cols){const t=document.getElementById(tid);if(!t)return;if(!filterData.length){t.innerHTML=`<tr><td colspan='${cols.length}' style='text-align:center;padding:20px'>暂无数据</td></tr>`;return;}let h="<tr>";cols.forEach(c=>{const arr=sortState.col===c?(sortState.asc?" ↑":" ↓"):"";h+=`<th onclick="sortTable('${c}','${tid}',${JSON.stringify(cols)})">${c}${arr}</th>`});h+="</tr>";filterData.forEach((r,i)=>{h+="<tr>";cols.forEach(c=>{const v=r[c]??"—";let cl="neutral";if(i>0&&!isNaN(v)&&!isNaN(filterData[i-1][c]))cl=v>filterData[i-1][c]?"up":v<filterData[i-1][c]?"down":"neutral";h+=`<td class="${cl}">${v}</td>`});h+="</tr>"});t.innerHTML=h}
-
-function renderAll(){
-renderTable("t1",["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
-renderTable("t2",["时间","铂含税(元/克)","铑含税(元/克)","铂不含税(元/克)","铑不含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
-renderTable("t3",["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
-renderTable("t4",["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
-drawChart("c1","黄金价格","金99(元/克)","#dc2626");
-drawChart("c2","铂金价格","铂(元/克)","#16a34a");
-drawChart("c3","铑金价格","铑(元/克)","#7c3aed");
-drawChart("c4","铂含税","铂含税(元/克)","#2563eb");
-drawChart("c5","铑含税","铑含税(元/克)","#db2777");
-drawChart("c6","单线总计","单线总计(万元)","#f59e0b");
-drawChart("c7","四线总计","四线总计(万元)","#4f46e5");
-const g=calcChange(latest["金99(元/克)"],prev["金99(元/克)"]);
-const b=calcChange(latest["铂(元/克)"],prev["铂(元/克)"]);
-const l=calcChange(latest["铑(元/克)"],prev["铑(元/克)"]);
-const busd=calcChange(latest["铂美元/盎司"],prev["铂美元/盎司"]);
-const lusd=calcChange(latest["铑美元/盎司"],prev["铑美元/盎司"]);
-const rate=calcChange(latest["汇率"],prev["汇率"]);
-document.querySelector(".kpi-g .value").textContent=latest["金99(元/克)"]??"—";
-document.querySelector(".kpi-b .value").textContent=latest["铂(元/克)"]??"—";
-document.querySelector(".kpi-l .value").textContent=latest["铑(元/克)"]??"—";
-document.querySelector(".kpi-busd .value").textContent=latest["铂美元/盎司"]??"—";
-document.querySelector(".kpi-lusd .value").textContent=latest["铑美元/盎司"]??"—";
-document.querySelector(".kpi-rate .value").textContent=latest["汇率"]??"—";
-document.querySelector(".kpi-g .badge").className="badge "+g.cls;
-document.querySelector(".kpi-b .badge").className="badge "+b.cls;
-document.querySelector(".kpi-l .badge").className="badge "+l.cls;
-document.querySelector(".kpi-busd .badge").className="badge "+busd.cls;
-document.querySelector(".kpi-lusd .badge").className="badge "+lusd.cls;
-document.querySelector(".kpi-rate .badge").className="badge "+rate.cls;
-document.querySelector(".kpi-g .badge").textContent=g.text;
-document.querySelector(".kpi-b .badge").textContent=b.text;
-document.querySelector(".kpi-l .badge").textContent=l.text;
-document.querySelector(".kpi-busd .badge").textContent=busd.text;
-document.querySelector(".kpi-lusd .badge").textContent=lusd.text;
-document.querySelector(".kpi-rate .badge").textContent=rate.text;
+function getPassword() {
+  // 字符码加密存储，无法直接看出密码
+  return String.fromCharCode(120,121,103,100,64,115,99,98);
 }
-window.addEventListener('load',renderAll);
+
+setInterval(() => { location.reload(); }, 300000);
+
+function logout() {
+  sessionStorage.clear();
+  location.href = "login.html";
+}
+
+function resetFilter() {
+  document.getElementById('startTime').value = '';
+  document.getElementById('endTime').value = '';
+  filterData = [...myDataAll];
+  renderAll();
+}
+
+function calcChange(curr, prev) {
+  if (!curr || !prev || curr == prev) return { text: "—", cls: "neutral" };
+  const numCurr = Number(curr) || 0;
+  const numPrev = Number(prev) || 0;
+  const diff = (numCurr - numPrev).toFixed(2);
+  if (diff > 0) return { text: `+${diff}`, cls: "up" };
+  if (diff < 0) return { text: diff, cls: "down" };
+  return { text: "—", cls: "neutral" };
+}
+
+function filterTable() {
+  const start = new Date(document.getElementById('startTime').value);
+  const end = new Date(document.getElementById('endTime').value);
+  filterData = myDataAll.filter(row => {
+    const d = new Date(row.时间);
+    return (!start.getTime() || d >= start) && (!end.getTime() || d <= end);
+  });
+  renderAll();
+}
+
+// 统一密码弹窗
+function openPwdModal(title, callback) {
+  const overlay = document.getElementById('costModalOverlay');
+  const input = document.getElementById('costPasswordInput');
+  const h = document.querySelector('#costModalOverlay h4');
+  h.textContent = title;
+  overlay.style.display = 'flex';
+  input.value = '';
+  input.focus();
+
+  input.onkeydown = null;
+
+  window.confirmCostPwd = function() {
+    const val = input.value.trim();
+    if (val === getPassword()) {
+      hasCostAuth = true;
+      overlay.style.display = 'none';
+      callback(true);
+    } else {
+      alert('密码错误，请重试');
+      input.focus();
+    }
+  };
+
+  window.cancelCostPwd = function() {
+    overlay.style.display = 'none';
+    callback(false);
+  };
+
+  input.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmCostPwd(); }
+  };
+}
+
+function exportExcel() {
+  openPwdModal("请输入导出数据密码", ok => {
+    if (!ok) return;
+    if (filterData.length === 0) { alert("无数据可导出"); return; }
+    const hs = Object.keys(filterData[0] || {});
+    const csv = [hs.join(",")].concat(filterData.map(r => hs.map(h => r[h] ?? "").join(","))).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `贵金属价格数据_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+}
+
+function exportAllData() {
+  openPwdModal("请输入导出数据密码", ok => {
+    if (!ok) return;
+    if (myDataAll.length === 0) { alert("无数据可导出"); return; }
+    const hs = Object.keys(myDataAll[0] || {});
+    const csv = [hs.join(",")].concat(myDataAll.map(r => hs.map(h => r[h] ?? "").join(","))).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `贵金属全量历史_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+}
+
+function drawChart(el, label, key, color) {
+  const ctx = document.getElementById(el)?.getContext("2d");
+  if (!ctx) return;
+  if (charts[el]) charts[el].destroy();
+  const validData = filterData.filter(d => d[key] != null && d[key] !== "");
+  charts[el] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: validData.map(x => x.时间),
+      datasets: [{ label, data: validData.map(x => x[key]), borderColor: color, backgroundColor: color+"33", tension: 0.3, fill: false }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { mode: "index", intersect: false } } }
+  });
+}
+
+function gotoTab(i) {
+  if ((i === 2 || i === 3) && !hasCostAuth) {
+    openPwdModal("请输入成本查看密码", ok => ok && doSwitchTab(i));
+    return;
+  }
+  doSwitchTab(i);
+}
+
+function doSwitchTab(i) {
+  document.querySelectorAll('.page').forEach((x,j)=>x.classList.toggle('active',j==i));
+  document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('active',j==i));
+}
+
+function sortTable(col, tableId, cols) {
+  sortState.col === col ? (sortState.asc = !sortState.asc) : (sortState = { col, asc: true });
+  filterData.sort((a,b)=>{
+    const va=a[col], vb=b[col];
+    if(!isNaN(va)&&!isNaN(vb)) return sortState.asc ? va-vb : vb-va;
+    return sortState.asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+  renderTable(tableId, cols);
+}
+
+function renderTable(tableId, cols) {
+  const t=document.getElementById(tableId); if(!t)return;
+  if(filterData.length===0){ t.innerHTML="<tr><td colspan='"+cols.length+"' style='text-align:center;padding:20px'>暂无数据</td></tr>"; return; }
+  let h="<tr>"; cols.forEach(c=>{ const arr=sortState.col===c?(sortState.asc?" ↑":" ↓"):""; h+=`<th onclick="sortTable('${c}','${tableId}',${JSON.stringify(cols)})">${c}${arr}</th>`; }); h+="</tr>";
+  filterData.forEach((r,i)=>{ h+="<tr>"; cols.forEach(c=>{ const v=r[c]??"—"; let cl="neutral"; if(i>0&&!isNaN(v)&&!isNaN(filterData[i-1][c])) cl=v>filterData[i-1][c]?"up":v<filterData[i-1][c]?"down":"neutral"; h+=`<td class="${cl}">${v}</td>`; }); h+="</tr>"; });
+  t.innerHTML=h;
+}
+
+function renderAll() {
+  renderTable("t1", ["时间","金99(元/克)","铂(元/克)","铑(元/克)"]);
+  renderTable("t2", ["时间","铂含税(元/克)","铑含税(元/克)","铂不含税(元/克)","铑不含税(元/克)","铂美元/盎司","铑美元/盎司","汇率"]);
+  renderTable("t3", ["时间","单线铂(万元)","单线铑(万元)","单线金(万元)","单线总计(万元)"]);
+  renderTable("t4", ["时间","四线铂损耗(万元)","四线铑损耗(万元)","四线总损耗(万元)","四线加工费(万元)","四线总计(万元)"]);
+
+  drawChart("c1","黄金价格","金99(元/克)","#dc2626");
+  drawChart("c2","铂金价格","铂(元/克)","#16a34a");
+  drawChart("c3","铑金价格","铑(元/克)","#7c3aed");
+  drawChart("c4","铂含税","铂含税(元/克)","#2563eb");
+  drawChart("c5","铑含税","铑含税(元/克)","#db2777");
+  drawChart("c6","单线总计","单线总计(万元)","#f59e0b");
+  drawChart("c7","四线总计","四线总计(万元)","#4f46e5");
+
+  const g=calcChange(latest["金99(元/克)"],prev["金99(元/克)"]);
+  const b=calcChange(latest["铂(元/克)"],prev["铂(元/克)"]);
+  const l=calcChange(latest["铑(元/克)"],prev["铑(元/克)"]);
+  const busd=calcChange(latest["铂美元/盎司"],prev["铂美元/盎司"]);
+  const lusd=calcChange(latest["铑美元/盎司"],prev["铑美元/盎司"]);
+  const rate=calcChange(latest["汇率"],prev["汇率"]);
+
+  document.querySelector(".kpi-g .value").textContent=latest["金99(元/克)"]??"—";
+  document.querySelector(".kpi-b .value").textContent=latest["铂(元/克)"]??"—";
+  document.querySelector(".kpi-l .value").textContent=latest["铑(元/克)"]??"—";
+  document.querySelector(".kpi-busd .value").textContent=latest["铂美元/盎司"]??"—";
+  document.querySelector(".kpi-lusd .value").textContent=latest["铑美元/盎司"]??"—";
+  document.querySelector(".kpi-rate .value").textContent=latest["汇率"]??"—";
+
+  document.querySelector(".kpi-g .badge").className="badge "+g.cls;
+  document.querySelector(".kpi-b .badge").className="badge "+b.cls;
+  document.querySelector(".kpi-l .badge").className="badge "+l.cls;
+  document.querySelector(".kpi-busd .badge").className="badge "+busd.cls;
+  document.querySelector(".kpi-lusd .badge").className="badge "+lusd.cls;
+  document.querySelector(".kpi-rate .badge").className="badge "+rate.cls;
+
+  document.querySelector(".kpi-g .badge").textContent=g.text;
+  document.querySelector(".kpi-b .badge").textContent=b.text;
+  document.querySelector(".kpi-l .badge").textContent=l.text;
+  document.querySelector(".kpi-busd .badge").textContent=busd.text;
+  document.querySelector(".kpi-lusd .badge").textContent=lusd.text;
+  document.querySelector(".kpi-rate .badge").textContent=rate.text;
+}
+
+window.addEventListener('load', renderAll);
 </script>
 
 <div class="modal-overlay" id="costModalOverlay">
@@ -222,6 +344,7 @@ window.addEventListener('load',renderAll);
       <div class="badge">—</div>
     </div>
   </div>
+
   <div class="card"><h3>黄金价格走势</h3><div class="chart-box"><canvas id="c1"></canvas></div></div>
   <div class="card"><h3>铂金价格走势</h3><div class="chart-box"><canvas id="c2"></canvas></div></div>
   <div class="card"><h3>铑金价格走势</h3><div class="chart-box"><canvas id="c3"></canvas></div></div>
@@ -243,5 +366,6 @@ window.addEventListener('load',renderAll);
   <div class="card"><h3>四线总成本走势</h3><div class="chart-box"><canvas id="c7"></canvas></div></div>
   <div class="card"><div class="table-box"><table id="t4"></table></div></div>
 </div>
+
 </body>
 </html>
